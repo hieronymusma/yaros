@@ -7,6 +7,7 @@ build-debug:
 clippy:
     cd src/userspace && cargo clippy -- -D warnings
     cargo clippy -- -D warnings
+    cargo clippy --manifest-path integration-tests/Cargo.toml --target x86_64-unknown-linux-gnu -- -D warnings
 
 clean:
     rm -f src/kernel/compiled_userspace/*
@@ -25,6 +26,7 @@ run-debug:
 
 test:
     cargo test --release
+    cargo test --release --manifest-path integration-tests/Cargo.toml --target x86_64-unknown-linux-gnu
 
 miri: build-debug
     cargo miri test --target riscv64gc-unknown-linux-gnu

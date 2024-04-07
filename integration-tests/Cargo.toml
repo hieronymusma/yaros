@@ -1,0 +1,5 @@
+[package]
+name = "integration-tests"
+edition = "2021"
+
+[dependencies]

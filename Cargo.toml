@@ -5,6 +5,7 @@ members = [
     "src/userspace",
 ]
 default-members = ["src/kernel"]
+exclude = ["integration-tests"]
 resolver = "2"
 
 [workspace.package]
