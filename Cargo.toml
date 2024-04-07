@@ -6,6 +6,7 @@ members = [
 ]
 default-members = ["kernel"]
 resolver = "3"
+exclude = ["integration-tests"]
 
 [workspace.package]
 description = "Yet another Rust Operating System (YaROS)"

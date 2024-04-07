@@ -10,6 +10,7 @@ build-cargo:
 clippy:
     cd userspace && cargo clippy -- -D warnings
     cargo clippy -- -D warnings
+    cargo clippy --manifest-path integration-tests/Cargo.toml --target x86_64-unknown-linux-gnu -- -D warnings
 
 clean:
     rm -f kernel/compiled_userspace/*
@@ -24,6 +25,7 @@ run: build
 
 test:
     cargo test --release
+    cargo test --release --manifest-path integration-tests/Cargo.toml --target x86_64-unknown-linux-gnu
 
 miri: build-cargo
     MIRIFLAGS="-Zmiri-permissive-provenance -Zmiri-env-forward=RUST_BACKTRACE" RUST_BACKTRACE=1 cargo miri test --target riscv64gc-unknown-linux-gnu
