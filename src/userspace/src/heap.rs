@@ -7,10 +7,10 @@ use core::{
     marker::PhantomData,
     mem::{align_of, size_of},
     ops::{Deref, DerefMut, Range},
-    ptr::{null_mut, NonNull},
+    ptr::null_mut,
 };
 
-use common::{mutex::Mutex, syscalls::sys_mmap_pages};
+use common::{mutex::Mutex, owning_ptr::OwningPtr, syscalls::sys_mmap_pages};
 
 const PAGE_SIZE: usize = 4096;
 
@@ -67,8 +67,8 @@ impl Pages for [Page] {
 }
 
 pub trait PageAllocator {
-    fn alloc(number_of_pages_requested: usize) -> Option<Range<NonNull<Page>>>;
-    fn dealloc(page: NonNull<Page>);
+    fn alloc(number_of_pages_requested: usize) -> Option<Range<OwningPtr<Page>>>;
+    fn dealloc(page: OwningPtr<Page>);
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -111,7 +111,7 @@ impl AlignedSizeWithMetadata {
 
 #[repr(C, align(8))]
 struct FreeBlock {
-    next: Option<NonNull<FreeBlock>>,
+    next: Option<OwningPtr<FreeBlock>>,
     size: AlignedSizeWithMetadata,
     // data: u64, This field is virtual because otherwise the offset calculation would be wrong
 }
@@ -132,7 +132,7 @@ impl FreeBlock {
         Self { next: None, size }
     }
 
-    fn initialize(block_ptr: NonNull<FreeBlock>, size: AlignedSizeWithMetadata) {
+    fn initialize(block_ptr: &mut OwningPtr<FreeBlock>, size: AlignedSizeWithMetadata) {
         let data_size = size.total_size();
 
         assert!(data_size >= Self::MINIMUM_SIZE);
@@ -150,22 +150,23 @@ impl FreeBlock {
     }
 
     fn split(
-        mut block_ptr: NonNull<FreeBlock>,
+        block_ptr: &mut OwningPtr<FreeBlock>,
         requested_size: AlignedSizeWithMetadata,
-    ) -> NonNull<FreeBlock> {
+    ) -> OwningPtr<FreeBlock> {
         let block = unsafe { block_ptr.as_mut() };
         assert!(block.size.total_size() >= requested_size.total_size() + Self::MINIMUM_SIZE);
         assert!(requested_size.total_size() % Self::DATA_ALIGNMENT == 0);
 
         let remaining_size = block.size.get_remaining_size(requested_size);
 
-        let new_block = unsafe { block_ptr.byte_add(requested_size.total_size()) };
+        let mut new_block =
+            unsafe { OwningPtr::new(block_ptr.byte_add(requested_size.total_size())) };
 
         assert!(remaining_size.total_size() % Self::DATA_ALIGNMENT == 0);
 
         block.size = requested_size;
 
-        Self::initialize(new_block, remaining_size);
+        Self::initialize(&mut new_block, remaining_size);
         new_block
     }
 }
@@ -192,14 +193,14 @@ impl<Allocator: PageAllocator> Heap<Allocator> {
             // Allocate directly from the page allocator
             let pages = minimum_amount_of_pages(layout.size());
             if let Some(allocation) = Allocator::alloc(pages) {
-                return allocation.start.cast().as_ptr();
+                return unsafe { allocation.start.cast().as_ptr() };
             } else {
                 return null_mut();
             };
         }
 
         let requested_size = AlignedSizeWithMetadata::from_layout(layout);
-        let block = if let Some(block) = self.find_and_remove(requested_size) {
+        let mut block = if let Some(block) = self.find_and_remove(requested_size) {
             block
         } else {
             let pages = minimum_amount_of_pages(requested_size.total_size());
@@ -208,15 +209,18 @@ impl<Allocator: PageAllocator> Heap<Allocator> {
             } else {
                 return null_mut();
             };
-            let free_block_ptr = allocation.start.cast();
-            FreeBlock::initialize(free_block_ptr, AlignedSizeWithMetadata::from_pages(pages));
+            let mut free_block_ptr = unsafe { allocation.start.cast() };
+            FreeBlock::initialize(
+                &mut free_block_ptr,
+                AlignedSizeWithMetadata::from_pages(pages),
+            );
             free_block_ptr
         };
 
         // Make smaller if needed
-        self.split_if_necessary(block, requested_size);
+        self.split_if_necessary(&mut block, requested_size);
 
-        block.cast().as_ptr()
+        unsafe { block.cast().as_ptr() }
     }
 
     fn dealloc(&mut self, ptr: *mut u8, layout: core::alloc::Layout) {
@@ -224,12 +228,12 @@ impl<Allocator: PageAllocator> Heap<Allocator> {
         if self.is_page_allocator_allocation(&layout) {
             // Deallocate directly to the page allocator
             unsafe {
-                Allocator::dealloc(NonNull::new_unchecked(ptr).cast());
+                Allocator::dealloc(OwningPtr::new_unchecked(ptr).cast());
             }
             return;
         }
         let size = AlignedSizeWithMetadata::from_layout(layout);
-        let free_block_ptr = unsafe { NonNull::new_unchecked(ptr).cast() };
+        let free_block_ptr = unsafe { OwningPtr::new_unchecked(ptr).cast() };
         let free_block = FreeBlock::new_with_size(size);
         unsafe {
             free_block_ptr.write(free_block);
@@ -237,7 +241,7 @@ impl<Allocator: PageAllocator> Heap<Allocator> {
         }
     }
 
-    fn insert(&mut self, mut block_ptr: NonNull<FreeBlock>) {
+    fn insert(&mut self, mut block_ptr: OwningPtr<FreeBlock>) {
         let block = unsafe { block_ptr.as_mut() };
         assert!(block.next.is_none(), "Heap metadata corruption");
         block.next = self.genesis_block.next.take();
@@ -246,7 +250,7 @@ impl<Allocator: PageAllocator> Heap<Allocator> {
 
     fn split_if_necessary(
         &mut self,
-        block_ptr: NonNull<FreeBlock>,
+        block_ptr: &mut OwningPtr<FreeBlock>,
         requested_size: AlignedSizeWithMetadata,
     ) {
         let block = unsafe { block_ptr.as_ref() };
@@ -263,9 +267,11 @@ impl<Allocator: PageAllocator> Heap<Allocator> {
     fn find_and_remove(
         &mut self,
         requested_size: AlignedSizeWithMetadata,
-    ) -> Option<NonNull<FreeBlock>> {
+    ) -> Option<OwningPtr<FreeBlock>> {
         let mut current = &mut self.genesis_block;
-        while let Some(potential_block) = current.next.map(|mut block| unsafe { block.as_mut() }) {
+        while let Some(potential_block) =
+            current.next.as_mut().map(|block| unsafe { block.as_mut() })
+        {
             if potential_block.size < requested_size {
                 current = potential_block;
                 continue;
@@ -305,7 +311,7 @@ unsafe impl<Allocator: PageAllocator> GlobalAlloc for MutexHeap<Allocator> {
 struct KernelSyscallAllocator;
 
 impl PageAllocator for KernelSyscallAllocator {
-    fn alloc(number_of_pages_requested: usize) -> Option<Range<NonNull<Page>>> {
+    fn alloc(number_of_pages_requested: usize) -> Option<Range<OwningPtr<Page>>> {
         let ptr = sys_mmap_pages(number_of_pages_requested) as *mut Page;
         if ptr.is_null() {
             return None;
@@ -313,11 +319,11 @@ impl PageAllocator for KernelSyscallAllocator {
         // SAFETY: We allready checked for a null ptr
         unsafe {
             let end = ptr.add(number_of_pages_requested);
-            Some(NonNull::new_unchecked(ptr)..NonNull::new_unchecked(end))
+            Some(OwningPtr::new_unchecked(ptr)..OwningPtr::new_unchecked(end))
         }
     }
 
-    fn dealloc(page: NonNull<Page>) {
+    fn dealloc(page: OwningPtr<Page>) {
         todo!()
     }
 }

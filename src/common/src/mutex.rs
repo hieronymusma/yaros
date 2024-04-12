@@ -46,8 +46,13 @@ impl<T> Mutex<T> {
     }
 }
 
-unsafe impl<T> Sync for Mutex<T> {}
-unsafe impl<T> Send for Mutex<T> {}
+/// T has to be sync because it could be taken by another thread
+/// The actual definition is from the std library
+unsafe impl<T: Send> Sync for Mutex<T> {}
+
+/// T has to be sync because it could be taken by another thread
+/// The actual definition is from the std library
+unsafe impl<T: Send> Send for Mutex<T> {}
 
 pub struct MutexGuard<'a, T> {
     mutex: &'a Mutex<T>,

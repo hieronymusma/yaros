@@ -6,5 +6,6 @@ pub mod big_endian;
 pub mod consumable_buffer;
 pub mod mutex;
 pub mod numbers;
+pub mod owning_ptr;
 pub mod syscalls;
 pub mod util;
