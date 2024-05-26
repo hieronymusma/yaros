@@ -1,4 +1,5 @@
 #![cfg_attr(miri, allow(unused_imports))]
+use crate::backtrace::Backtrace;
 use crate::{println, test::qemu_exit};
 use core::panic::PanicInfo;
 
@@ -6,6 +7,8 @@ use core::panic::PanicInfo;
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     crate::cpu::disable_gloabl_interrupts();
+    println!("");
+    Backtrace::capture();
     println!("");
     crate::debug::dump_current_state();
     println!("KERNEL Panic Occured!");

@@ -1,5 +1,6 @@
 [build]
 target = "riscv64gc-unknown-none-elf"
+rustflags = ["-Cforce-frame-pointers=true"]
 # Leave it here in case we need it in the future
 # Or just if we forget and get here by accident to remember
 # rustflags = ["-Ctarget-feature=+relax"]

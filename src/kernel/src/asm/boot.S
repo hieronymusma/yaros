@@ -44,6 +44,11 @@ bss_cleared:
 	la t0, supervisor_trap_vector
 	csrw stvec, t0
 
+	# Clear previous stack frames
+	add sp, sp, -16
+	sd zero, -16(sp)
+	sd zero, -8(sp)
+
 	call kernel_init
 
 	# Enable all interrupts

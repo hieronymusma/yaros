@@ -134,7 +134,7 @@ impl RootPageTableHolder {
         unsafe { &mut *self.root_table }
     }
 
-    fn is_active(&self) -> bool {
+    pub fn is_active(&self) -> bool {
         let satp = read_satp();
         let ppn = satp & 0xfffffffffff;
         let page_table_address = ppn << 12;
@@ -433,6 +433,15 @@ impl RootPageTableHolder {
         self.get_page_table_entry_for_address(address).map(|entry| {
             (entry.get_physical_address() as usize + offset_from_page_start) as *const T
         })
+    }
+
+    pub fn is_mapped_with<T>(&self, address: *const T, with: XWRMode) -> bool {
+        let address = address as usize;
+
+        self.get_page_table_entry_for_address(address)
+            .map_or(false, |entry| {
+                entry.get_validity() && entry.is_leaf() && entry.get_xwr_mode() == with
+            })
     }
 }
 
