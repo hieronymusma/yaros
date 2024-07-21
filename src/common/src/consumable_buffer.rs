@@ -48,7 +48,7 @@ impl<'a> ConsumableBuffer<'a> {
     }
 
     pub fn consume_unsized_type<T: FromU8BufferUnsized>(&mut self) -> Option<T> {
-        let result = T::from_u8_buffer(self.buffer);
+        let result = T::from_u8_buffer(self.rest());
         if let Some(result) = result {
             let size = result.size_in_bytes();
             if self.position + size > self.buffer.len() {
@@ -99,6 +99,14 @@ impl<'a> ConsumableBuffer<'a> {
         } else {
             self.buffer.len() - self.position
         }
+    }
+
+    pub fn position(&self) -> usize {
+        self.position
+    }
+
+    pub fn rest(&self) -> &[u8] {
+        &self.buffer[self.position..]
     }
 }
 

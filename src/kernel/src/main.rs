@@ -9,6 +9,7 @@
 #![feature(exposed_provenance)]
 #![feature(let_chains)]
 #![feature(vec_into_raw_parts)]
+#![feature(assert_matches)]
 #![test_runner(test::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 

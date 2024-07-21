@@ -30,3 +30,5 @@ impl_number!(u16);
 impl_number!(u32);
 impl_number!(u64);
 impl_number!(u128);
+impl_number!(usize);
+impl_number!(isize);
