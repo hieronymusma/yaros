@@ -38,7 +38,7 @@ impl<'a> Unwinder<'a> {
     pub fn find_row_for_address(&self, address: u64) -> &Row {
         self.rows
             .iter()
-            .find(|row| row.start_address == address)
+            .find(|row| address >= row.start_address && address < row.end_address)
             .expect("There must be an unwind rule.")
     }
 

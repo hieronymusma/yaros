@@ -59,19 +59,15 @@ impl<'a> Backtrace<'a> {
         }
     }
 
-    fn print(&self) {
-        let mut regs = CallerSavedRegs::here();
-        let pc = regs.pc.unwrap() as u64;
-        let (_, fde) = self
-            .unwinwd_instructions
-            .range(..=pc)
-            .next_back()
-            .expect("Must exist");
-        info!("pc={:#x} {:#x?}", pc, fde);
+    fn next(&self, regs: &mut CallerSavedRegs) -> Option<usize> {
+        let pc = regs.pc? as u64;
+
+        let (_, fde) = self.unwinwd_instructions.range(..=pc).next_back()?;
+
         let unwinder = Unwinder::new(fde);
         let row = unwinder.find_row_for_address(pc);
 
-        let cfa = ((regs[row.cfa_register].unwrap() as i64) + row.cfa_offset) as u64;
+        let cfa = ((regs[row.cfa_register]? as i64) + row.cfa_offset) as u64;
 
         for reg_index in CallerSavedRegs::index_iter() {
             match row.register_rules[reg_index] {
@@ -86,7 +82,21 @@ impl<'a> Backtrace<'a> {
             }
         }
 
-        todo!()
+        let ra = regs.ra()?;
+
+        regs.set_pc(ra);
+        regs.set_sp(cfa as usize);
+
+        Some(ra)
+    }
+
+    fn print(&self) {
+        let mut regs = CallerSavedRegs::here();
+        let mut counter = 0u64;
+        while let Some(address) = self.next(&mut regs) {
+            info!("{counter}: {address:#x}");
+            counter += 1;
+        }
     }
 }
 
@@ -96,7 +106,7 @@ impl<'a> Backtrace<'a> {
 /// I tried to generate the following code via a macro. However this is not possible,
 /// because they won't allow to concatenate x$num_reg as a identifier and I need the
 /// literal number to access it via an index.
-#[derive(Default, Debug)]
+#[derive(Debug)]
 struct CallerSavedRegs {
     pc: Option<usize>,
     x1: Option<usize>,
@@ -164,6 +174,18 @@ impl core::ops::IndexMut<u64> for CallerSavedRegs {
 impl CallerSavedRegs {
     fn index_iter() -> IntoIter<usize, 14> {
         [1, 2, 8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27].into_iter()
+    }
+
+    fn ra(&self) -> Option<usize> {
+        self.x1
+    }
+
+    fn set_pc(&mut self, value: usize) {
+        self.pc = Some(value);
+    }
+
+    fn set_sp(&mut self, value: usize) {
+        self.x2 = Some(value);
     }
 
     fn here() -> Self {
