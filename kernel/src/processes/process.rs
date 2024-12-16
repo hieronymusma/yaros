@@ -85,7 +85,7 @@ impl Process {
             name: "never".to_string(),
             pid: NEVER_PID,
             register_state: TrapFrame::zero(),
-            page_table: RootPageTableHolder::invalid(),
+            page_table: RootPageTableHolder::new_with_kernel_mapping(), // We need to allocate page tables because they get used when we go to sleep. The trap.S file will restore the page tables of the curren "scheduled" process. Where in fact we just go back to the kernel and sleep.
             program_counter: 0,
             allocated_pages: Vec::new(),
             state: ProcessState::Waiting,
@@ -108,7 +108,7 @@ impl Process {
             pages.as_ptr() as usize,
             PAGE_SIZE * number_of_pages,
             crate::memory::page_tables::XWRMode::ReadWrite,
-            "Heap",
+            "Heap".to_string(),
         );
         self.allocated_pages.push(pages);
         let ptr = core::ptr::without_provenance_mut(self.free_mmap_address);

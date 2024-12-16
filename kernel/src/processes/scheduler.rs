@@ -8,7 +8,6 @@ use crate::{
     cpu::{self, PerCpuData},
     debug, info,
     klibc::{elf::ElfFile, macros::unwrap_or_return, runtime_initialized::RuntimeInitializedData},
-    memory::page_tables::{activate_page_table, KERNEL_PAGE_TABLES},
     processes::{process::Process, timer},
     test::qemu_exit,
 };
@@ -73,7 +72,6 @@ impl Scheduler {
             timer::set_timer(10);
             return;
         }
-        activate_page_table(&KERNEL_PAGE_TABLES);
         timer::disable_timer();
         let addr = cpu::wfi_loop as *const () as usize;
         debug!("setting sepc={addr:#x}");
@@ -84,7 +82,6 @@ impl Scheduler {
     pub fn kill_current_process(&mut self) {
         let current_process = self.swap_current_with_dummy();
 
-        activate_page_table(&KERNEL_PAGE_TABLES);
         let pid = current_process.lock().get_pid();
         drop(current_process);
         self.process_table.kill(pid);
@@ -110,7 +107,6 @@ impl Scheduler {
         let highest_pid = self.process_table.get_highest_pid_without(&["yash"]);
 
         if let Some(pid) = highest_pid {
-            activate_page_table(&KERNEL_PAGE_TABLES);
             self.process_table.kill(pid);
         }
 
@@ -161,7 +157,6 @@ impl Scheduler {
             PerCpuData::write_trap_frame(p.get_register_state());
             cpu::write_sepc(pc);
             cpu::set_ret_to_kernel_mode(p.get_in_kernel_mode());
-            activate_page_table(p.get_page_table());
 
             debug!("Scheduling PID={} NAME={}", p.get_pid(), p.get_name());
         });
