@@ -3,15 +3,15 @@ use crate::{
     debug,
     drivers::virtio::{
         capability::{
-            virtio_pci_cap, VIRTIO_PCI_CAP_COMMON_CFG, VIRTIO_PCI_CAP_DEVICE_CFG,
-            VIRTIO_PCI_CAP_NOTIFY_CFG,
+            VIRTIO_PCI_CAP_COMMON_CFG, VIRTIO_PCI_CAP_DEVICE_CFG, VIRTIO_PCI_CAP_NOTIFY_CFG,
+            virtio_pci_cap,
         },
         virtqueue::{BufferDirection, VirtQueue},
     },
     info,
     klibc::{
-        util::{is_power_of_2_or_zero, BufferExtension, ByteInterpretable},
         MMIO,
+        util::{BufferExtension, ByteInterpretable, is_power_of_2_or_zero},
     },
     net::mac::MacAddress,
     pci::PCIDevice,

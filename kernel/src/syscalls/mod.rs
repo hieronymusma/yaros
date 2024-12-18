@@ -6,8 +6,8 @@ use alloc::string::String;
 use common::{
     net::UDPDescriptor,
     syscalls::{
-        kernel::KernelSyscalls, userspace_argument::UserspaceArgument, SysExecuteError,
-        SysSocketError, SysWaitError,
+        SysExecuteError, SysSocketError, SysWaitError, kernel::KernelSyscalls,
+        userspace_argument::UserspaceArgument,
     },
 };
 
@@ -16,10 +16,10 @@ use crate::{
     debug,
     io::stdin_buf::STDIN_BUFFER,
     klibc::macros::unwrap_or_return,
-    net::{udp::UdpHeader, ARP_CACHE, OPEN_UDP_SOCKETS},
+    net::{ARP_CACHE, OPEN_UDP_SOCKETS, udp::UdpHeader},
     print, println,
     processes::{
-        process::{Pid, ProcessState, NEVER_PID},
+        process::{NEVER_PID, Pid, ProcessState},
         process_table::ProcessRef,
         scheduler::{self},
     },

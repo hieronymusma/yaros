@@ -3,7 +3,7 @@ use common::mutex::Mutex;
 
 use crate::{debug, info};
 
-use super::process::{Pid, Process, ProcessState, NEVER_PID};
+use super::process::{NEVER_PID, Pid, Process, ProcessState};
 
 pub type ProcessRef = Arc<Mutex<Process>>;
 

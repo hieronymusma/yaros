@@ -377,47 +377,38 @@ mod tests {
 
         assert_eq!(program_headers.len(), 4);
 
-        assert_eq!(
-            program_headers[0],
-            ElfProgramHeaderEntry {
-                header_type: ProgramHeaderType::PT_LOAD,
-                access_flags: ProgramHeaderFlags::RX,
-                offset_in_file: 0x1000,
-                virtual_address: 0x1000,
-                physical_address: 0x1000,
-                file_size: 0xba,
-                memory_size: 0xba,
-                alignment: 0x1000,
-            }
-        );
+        assert_eq!(program_headers[0], ElfProgramHeaderEntry {
+            header_type: ProgramHeaderType::PT_LOAD,
+            access_flags: ProgramHeaderFlags::RX,
+            offset_in_file: 0x1000,
+            virtual_address: 0x1000,
+            physical_address: 0x1000,
+            file_size: 0xba,
+            memory_size: 0xba,
+            alignment: 0x1000,
+        });
 
-        assert_eq!(
-            program_headers[1],
-            ElfProgramHeaderEntry {
-                header_type: ProgramHeaderType::PT_LOAD,
-                access_flags: ProgramHeaderFlags::R,
-                offset_in_file: 0x10c0,
-                virtual_address: 0x10c0,
-                physical_address: 0x10c0,
-                file_size: 0xf0,
-                memory_size: 0xf0,
-                alignment: 0x1000,
-            }
-        );
+        assert_eq!(program_headers[1], ElfProgramHeaderEntry {
+            header_type: ProgramHeaderType::PT_LOAD,
+            access_flags: ProgramHeaderFlags::R,
+            offset_in_file: 0x10c0,
+            virtual_address: 0x10c0,
+            physical_address: 0x10c0,
+            file_size: 0xf0,
+            memory_size: 0xf0,
+            alignment: 0x1000,
+        });
 
-        assert_eq!(
-            program_headers[2],
-            ElfProgramHeaderEntry {
-                header_type: ProgramHeaderType::PT_LOAD,
-                access_flags: ProgramHeaderFlags::RW,
-                offset_in_file: 0x11b0,
-                virtual_address: 0x11b0,
-                physical_address: 0x11b0,
-                file_size: 0x3a0,
-                memory_size: 0x3a0,
-                alignment: 0x1000,
-            }
-        );
+        assert_eq!(program_headers[2], ElfProgramHeaderEntry {
+            header_type: ProgramHeaderType::PT_LOAD,
+            access_flags: ProgramHeaderFlags::RW,
+            offset_in_file: 0x11b0,
+            virtual_address: 0x11b0,
+            physical_address: 0x11b0,
+            file_size: 0x3a0,
+            memory_size: 0x3a0,
+            alignment: 0x1000,
+        });
 
         // The fourth element is GNU_STACK. We don't need it, therefore we don't check for it here.
     }

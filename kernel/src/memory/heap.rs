@@ -2,14 +2,14 @@ use core::{
     alloc::{GlobalAlloc, Layout},
     marker::PhantomData,
     mem::{align_of, size_of},
-    ptr::{null_mut, NonNull},
+    ptr::{NonNull, null_mut},
 };
 
 use common::{mutex::Mutex, util::align_up};
 
 use crate::{assert::static_assert_size, klibc::util::minimum_amount_of_pages};
 
-use super::{page_allocator::PageAllocator, PAGE_SIZE};
+use super::{PAGE_SIZE, page_allocator::PageAllocator};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
@@ -284,7 +284,7 @@ mod test {
         alloc::GlobalAlloc,
         mem::MaybeUninit,
         ops::Range,
-        ptr::{addr_of_mut, NonNull},
+        ptr::{NonNull, addr_of_mut},
     };
 
     const HEAP_PAGES: usize = 8;
