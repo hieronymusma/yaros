@@ -15,7 +15,7 @@ use userspace::{print, println, util::read_line};
 extern crate alloc;
 extern crate userspace;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn main() {
     println!("Welcome to connect four!");
     print!("Choose the search depth: ");

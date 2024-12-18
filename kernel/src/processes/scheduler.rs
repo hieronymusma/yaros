@@ -5,7 +5,7 @@ use crate::{
     cpu, debug, info,
     interrupts::{read_trap_frame, set_sscratch_to_kernel_trap_frame, write_trap_frame},
     klibc::{elf::ElfFile, macros::unwrap_or_return, runtime_initialized::RuntimeInitializedData},
-    memory::page_tables::{activate_page_table, KERNEL_PAGE_TABLES},
+    memory::page_tables::{KERNEL_PAGE_TABLES, activate_page_table},
     processes::{process::Process, timer},
     test::qemu_exit,
 };

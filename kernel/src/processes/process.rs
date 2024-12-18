@@ -1,7 +1,7 @@
 use crate::{
     debug,
     klibc::elf::ElfFile,
-    memory::{page::PinnedHeapPages, page_tables::RootPageTableHolder, PAGE_SIZE},
+    memory::{PAGE_SIZE, page::PinnedHeapPages, page_tables::RootPageTableHolder},
     net::sockets::SharedAssignedSocket,
     processes::loader::{self, LoadedElf},
 };

@@ -5,7 +5,7 @@ use core::{
     fmt::Debug,
     mem::MaybeUninit,
     ops::Range,
-    ptr::{null_mut, NonNull},
+    ptr::{NonNull, null_mut},
 };
 
 #[repr(u8)]
@@ -210,13 +210,13 @@ pub trait PageAllocator {
 
 #[cfg(test)]
 mod tests {
-    use super::{MetadataPageAllocator, Page, PAGE_SIZE};
+    use super::{MetadataPageAllocator, PAGE_SIZE, Page};
     use crate::memory::page_allocator::PageStatus;
     use common::mutex::Mutex;
     use core::{
         mem::MaybeUninit,
         ops::Range,
-        ptr::{addr_of, addr_of_mut, NonNull},
+        ptr::{NonNull, addr_of, addr_of_mut},
     };
 
     const MEMORY_PATTERN: u8 = 0x42;
@@ -249,11 +249,13 @@ mod tests {
     #[test_case]
     fn clean_start() {
         init_allocator(false, &[]);
-        assert!(PAGE_ALLOC
-            .lock()
-            .metadata
-            .iter()
-            .all(|s| *s == PageStatus::FirstUse));
+        assert!(
+            PAGE_ALLOC
+                .lock()
+                .metadata
+                .iter()
+                .all(|s| *s == PageStatus::FirstUse)
+        );
     }
 
     #[test_case]
@@ -264,9 +266,11 @@ mod tests {
         assert!(alloc(1).is_none());
         let allocator = PAGE_ALLOC.lock();
         let (last, all_metadata_except_last) = allocator.metadata.split_last().unwrap();
-        assert!(all_metadata_except_last
-            .iter()
-            .all(|s| *s == PageStatus::Used));
+        assert!(
+            all_metadata_except_last
+                .iter()
+                .all(|s| *s == PageStatus::Used)
+        );
         assert_eq!(*last, PageStatus::Last);
     }
 
@@ -293,68 +297,63 @@ mod tests {
         init_allocator(false, &[]);
         let page1 = alloc(1).unwrap();
         assert_eq!(PAGE_ALLOC.lock().metadata[0], PageStatus::Last);
-        assert!(PAGE_ALLOC.lock().metadata[1..]
-            .iter()
-            .all(|s| *s == PageStatus::FirstUse));
+        assert!(
+            PAGE_ALLOC.lock().metadata[1..]
+                .iter()
+                .all(|s| *s == PageStatus::FirstUse)
+        );
         let page2 = alloc(2).unwrap();
-        assert_eq!(
-            PAGE_ALLOC.lock().metadata[..3],
-            [PageStatus::Last, PageStatus::Used, PageStatus::Last]
+        assert_eq!(PAGE_ALLOC.lock().metadata[..3], [
+            PageStatus::Last,
+            PageStatus::Used,
+            PageStatus::Last
+        ]);
+        assert!(
+            PAGE_ALLOC.lock().metadata[3..]
+                .iter()
+                .all(|s| *s == PageStatus::FirstUse)
         );
-        assert!(PAGE_ALLOC.lock().metadata[3..]
-            .iter()
-            .all(|s| *s == PageStatus::FirstUse));
         let page3 = alloc(3).unwrap();
-        assert_eq!(
-            PAGE_ALLOC.lock().metadata[..6],
-            [
-                PageStatus::Last,
-                PageStatus::Used,
-                PageStatus::Last,
-                PageStatus::Used,
-                PageStatus::Used,
-                PageStatus::Last
-            ]
+        assert_eq!(PAGE_ALLOC.lock().metadata[..6], [
+            PageStatus::Last,
+            PageStatus::Used,
+            PageStatus::Last,
+            PageStatus::Used,
+            PageStatus::Used,
+            PageStatus::Last
+        ]);
+        assert!(
+            PAGE_ALLOC.lock().metadata[6..]
+                .iter()
+                .all(|s| *s == PageStatus::FirstUse),
         );
-        assert!(PAGE_ALLOC.lock().metadata[6..]
-            .iter()
-            .all(|s| *s == PageStatus::FirstUse),);
         dealloc(page2);
-        assert_eq!(
-            PAGE_ALLOC.lock().metadata[..6],
-            [
-                PageStatus::Last,
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Used,
-                PageStatus::Used,
-                PageStatus::Last
-            ]
-        );
+        assert_eq!(PAGE_ALLOC.lock().metadata[..6], [
+            PageStatus::Last,
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Used,
+            PageStatus::Used,
+            PageStatus::Last
+        ]);
         dealloc(page1);
-        assert_eq!(
-            PAGE_ALLOC.lock().metadata[..6],
-            [
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Used,
-                PageStatus::Used,
-                PageStatus::Last
-            ]
-        );
+        assert_eq!(PAGE_ALLOC.lock().metadata[..6], [
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Used,
+            PageStatus::Used,
+            PageStatus::Last
+        ]);
         dealloc(page3);
-        assert_eq!(
-            PAGE_ALLOC.lock().metadata[..6],
-            [
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Free,
-                PageStatus::Free
-            ]
-        );
+        assert_eq!(PAGE_ALLOC.lock().metadata[..6], [
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Free,
+            PageStatus::Free
+        ]);
     }
 
     #[test_case]

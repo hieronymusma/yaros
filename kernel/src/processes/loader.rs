@@ -5,7 +5,7 @@ use crate::{
         elf::{ElfFile, ProgramHeaderType},
         util::minimum_amount_of_pages,
     },
-    memory::{page::PinnedHeapPages, page_tables::RootPageTableHolder, PAGE_SIZE},
+    memory::{PAGE_SIZE, page::PinnedHeapPages, page_tables::RootPageTableHolder},
 };
 
 pub const STACK_END: usize = 0xfffffffffffff000;

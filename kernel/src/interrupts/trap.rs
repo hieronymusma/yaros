@@ -1,4 +1,4 @@
-use super::trap_cause::{exception::ENVIRONMENT_CALL_FROM_U_MODE, InterruptCause};
+use super::trap_cause::{InterruptCause, exception::ENVIRONMENT_CALL_FROM_U_MODE};
 use crate::{
     cpu::{self},
     debug,
@@ -15,12 +15,12 @@ use crate::{
 use common::syscalls::trap_frame::{Register, TrapFrame};
 use core::panic;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn handle_timer_interrupt() {
     scheduler::THE.lock().schedule();
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 fn handle_external_interrupt() {
     debug!("External interrupt occurred!");
     let plic_interrupt = plic::get_next_pending().expect("There should be a pending interrupt.");
@@ -91,7 +91,7 @@ fn handle_unhandled_exception(
     panic!("{}", message);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn handle_exception(
     cause: InterruptCause,
     stval: usize,
@@ -105,7 +105,7 @@ extern "C" fn handle_exception(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 extern "C" fn handle_unimplemented(
     cause: InterruptCause,
     _stval: usize,
